@@ -4,7 +4,11 @@ const API_KEY = process.env.API_KEY;
 
 export async function GET() {
   try {
-    const url = `https://newsapi.org/v2/everything?q=indonesia&apiKey=${API_KEY}&pageSize=20&language=en`;
+    if (!API_KEY) {
+      return NextResponse.json({ error: 'API Key tidak ditemukan' }, { status: 500 });
+    }
+
+    const url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}&pageSize=100`;
     
     const response = await fetch(url);
     const data = await response.json();
