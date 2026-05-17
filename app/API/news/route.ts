@@ -1,14 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 const API_KEY = process.env.API_KEY;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     if (!API_KEY) {
       return NextResponse.json({ error: 'API Key tidak ditemukan' }, { status: 500 });
     }
 
-    const url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}&pageSize=100`;
+    const searchParams = request.nextUrl.searchParams;
+    const query = searchParams.get('q');
+
+    let url: string;
+    
+    if (query) {
+      url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&apiKey=${API_KEY}&pageSize=100&language=en`;
+    } else {
+      url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}&pageSize=100`;
+    }
     
     const response = await fetch(url);
     const data = await response.json();

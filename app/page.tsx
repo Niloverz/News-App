@@ -17,34 +17,54 @@ export default function Home() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const fetchNews = async (query?: string) => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const url = query ? `/API/news?q=${encodeURIComponent(query)}` : '/API/news';
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (response.ok) {
+        setArticles(data);
+      } else {
+        setError(data.error || 'Gagal mengambil berita');
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchNews() {
-      try {
-        const response = await fetch('/API/news');
-        const data = await response.json();
-
-        if (response.ok) {
-          setArticles(data);
-        } else {
-          setError(data.error || 'Gagal mengambil berita');
-        }
-      } catch (err) {
-        setError('Terjadi kesalahan');
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchNews();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      fetchNews(searchQuery.trim());
+    }
+  };
+
+  const handleReset = () => {
+    setSearchQuery('');
+    setIsSearching(false);
+    fetchNews();
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-          <p className="text-gray-500 mt-4">Memuat 100 berita...</p>
+          <p className="text-gray-300 mt-4">Memuat berita...</p>
         </div>
       </div>
     );
@@ -52,11 +72,11 @@ export default function Home() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-xl">❌ {error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchNews()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             Coba Lagi
@@ -67,14 +87,43 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-    <header className="bg-black shadow-md sticky top-0 z-10">
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="text-3xl font-bold text-center text-white">
-      NewsApp
-        </h1>
-      </div>
-    </header>
+    <div className="min-h-screen bg-white">
+      <header className="bg-black shadow-md sticky top-0 z-10 border-b border-gray-800">
+        <div className="container mx-auto px-4 py-6">
+          <h1 className="text-3xl font-bold text-center text-white">
+            NewsApp
+          </h1>
+          
+          <form onSubmit={handleSearch} className="max-w-2xl mx-auto mt-4 flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari berita..."
+              className="flex-1 px-4 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Cari
+            </button>
+            {isSearching && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-6 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+              >
+                Reset
+              </button>
+            )}
+          </form>
+
+          <p className="text-center text-sm text-gray-300 mt-1 font-medium">
+            Menampilkan {articles.length} berita
+          </p>
+        </div>
+      </header>
 
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -84,7 +133,7 @@ export default function Home() {
               {articles.map((article, index) => (
                 <div
                   key={`${index}-${article.url}`}
-                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-100 h-full flex flex-col transform hover:-translate-y-1"
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 h-full flex flex-col transform hover:-translate-y-1"
                 >
                   {article.urlToImage ? (
                     <img
@@ -98,14 +147,14 @@ export default function Home() {
                         if (parent) {
                           const fallback = document.createElement('div');
                           fallback.className = 'w-full h-48 bg-black flex items-center justify-center border border-gray-700';
-                          fallback.innerHTML = '<span class="text-white text-5xl">📰</span>';
+                          fallback.innerHTML = '<span class="text-gray-500 text-5xl">📰</span>';
                           parent.appendChild(fallback);
                         }
                       }}
                     />
                   ) : (
-                    <div className="bg-black rounded-xl shadow-md p-5 mt-6 border border-gray-800">
-                      <span className="text-white text-5xl">📰</span>
+                    <div className="w-full h-48 bg-black flex items-center justify-center border border-gray-700">
+                      <span className="text-gray-500 text-5xl">📰</span>
                     </div>
                   )}
                   
@@ -152,7 +201,7 @@ export default function Home() {
             <div className="bg-white rounded-xl shadow-md p-5 sticky top-24">
               <div className="flex items-center gap-2 mb-4 pb-2 border-b-2 border-blue-500">
                 <span className="text-xl">🔥</span>
-                <h3 className="font-bold text-lg">Trending Topics</h3>
+                <h3 className="font-bold text-lg text-black">Trending Topics</h3>
               </div>
               
               <ul className="space-y-3">
@@ -174,12 +223,12 @@ export default function Home() {
               </ul>
             </div>
 
-           <div className="bg-black rounded-xl shadow-md p-5 mt-6 border border-gray-800">
-              <h3 className="font-bold text-lg mb-2">📌 Tentang NewsApp</h3>
-              <p className="text-sm opacity-90">
+            <div className="bg-black rounded-xl shadow-md p-5 mt-6 border border-gray-800">
+              <h3 className="font-bold text-lg mb-2 text-white">📌 Tentang NewsApp</h3>
+              <p className="text-sm text-gray-300">
                 Berita terbaru dari berbagai sumber di Amerika Serikat.
               </p>
-              <p className="text-xs opacity-75 mt-3">
+              <p className="text-xs text-gray-500 mt-3">
                 Data provided by NewsAPI.org
               </p>
             </div>
@@ -187,13 +236,12 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-8">
+      <footer className="bg-black border-t border-gray-800 mt-8">
         <div className="container mx-auto px-4 py-6 text-center">
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-400 text-sm">
             © 2025 NewsApp • Built with Next.js & Tailwind CSS
           </p>
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-gray-500 text-xs mt-1">
             Powered by NewsAPI.org | {articles.length} berita dimuat
           </p>
         </div>
